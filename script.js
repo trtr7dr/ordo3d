@@ -193,8 +193,10 @@ class MultiScene {
     }
 
     onMouseMove(event) {
+
         this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
     }
 
     set_scenes(id) {
@@ -224,6 +226,7 @@ class MultiScene {
         this.set_scenes(gltf);
         this.mobile = false;
         this.mob_delta = 0;
+        this.mob_delta_x = 0;
         this.clock = new THREE.Clock();
         this.container = document.getElementById('container');
         this.w = this.container.offsetWidth / this.res_param;
@@ -270,6 +273,7 @@ class MultiScene {
             }
         };
         this.godrayRenderTargetResolutionMultiplier = 1.0 / 4.0;
+
         this.scene = new THREE.Scene();
         this.scene.background = 'white';
         this.loader = new GLTFLoader();
@@ -310,6 +314,7 @@ class MultiScene {
     }
 
     postprocessing_create() {
+
         this.composer = this.track(new EffectComposer(this.renderer));
         this.composer.addPass(new RenderPass(this.scene, this.camera));
         this.bloomPass = this.track(new UnrealBloomPass(new THREE.Vector2(this.w, this.h), 1.5, 0.4, 0.85));
@@ -322,12 +327,27 @@ class MultiScene {
         this.afterimagePass.renderToScreen = true;
         this.composer.addPass(this.afterimagePass);
 
+        //this.effectFilm = new FilmPass(0.02, 0.925, 10008, false);
+
+        //this.effectFilm = new FilmPass(0.35, 0.025, 648, false);
+
         this.outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), this.scene, this.camera);
         this.outlinePass.edgeStrength = 10;
         this.outlinePass.visibleEdgeColor.set('#931400');
         this.outlinePass.edgeThickness = 4;
         this.outlinePass.usePatternTexture = true;
         this.composer.addPass(this.outlinePass);
+
+        // this.composer.addPass(this.effectFilm);
+
+        //var effectGrayScale = new ShaderPass(LuminosityShader); //вариант без него
+        // this.composer.addPass(effectGrayScale);
+        //this.effectSobel = this.track(new ShaderPass(SobelOperatorShader));
+        //this.effectSobel.uniforms[ 'resolution' ].value.x = this.w;
+        //this.effectSobel.uniforms[ 'resolution' ].value.y = this.h;
+        //this.composer.addPass(this.effectSobel);
+
+        //this.set_after_post(this.json[this.sname]['amsterdam']);
     }
 
     after_switch() {
@@ -397,7 +417,6 @@ class MultiScene {
         this.add_obj(object);
         this.on_window_resize();
         this.animate();
-        HTMLControlls.gltfReady();
     }
 
     load_GLTF(url) {
@@ -797,6 +816,11 @@ class MultiScene {
         if (this.mobile) {
             delta = this.mob_delta;
             this.scroll_dist = 10;
+            //this.view.z += this.mob_delta_x * 30;
+            // console.log(this.camera.position['x'] +' '+ this.view.x);
+            //this.controls.target['z'] = this.view.z;
+            //console.log(this.controls.target);
+
         } else {
             e = e || window.event;
             delta = (e !== undefined) ? e.deltaY || e.detail || e.wheelDelta : 20;
@@ -809,6 +833,7 @@ class MultiScene {
         if (!this.json[this.sname]['animation']) {
             this.mixer.update(curve_coord.x / 2000);
         }
+
     }
 
     addSelectedObject(object) {
@@ -884,14 +909,20 @@ class MultiScene {
     }
 
     cursor_move(z, y) {
-        y = this.h / 4 - y / 2;
-        z = this.w / 4 - z / 2;
-        this.controls.target = new THREE.Vector3(this.view.x, this.view.y, z);
+        if (this.mobile) {
+            this.view.z += this.mob_delta_x;
+            this.controls.target['z'] = this.view.z;
+        } else {
+            y = this.h / 4 - y / 2;
+            z = this.w / 4 - z / 2;
+            this.controls.target = new THREE.Vector3(this.view.x, this.view.y, z);
+        }
     }
 
 }
 
 // Старт событий и таймеров
+
 
 var json = {
     "scene1": {
@@ -958,33 +989,32 @@ $('#container').on('wheel', function (e) {
 
 var lastY;
 var h_fmob = document.documentElement.clientHeight;
+var w_fmob = document.documentElement.clientWidth;
 $('#container').on('touchmove', function (e) {
     mScene.mobile = true;
     var currentY = e.originalEvent.touches[0].clientY;
     mScene.mob_delta = (currentY > lastY) ? -0.05 : 0.05;
     lastY = currentY;
+
+    var currentX = e.originalEvent.touches[0].clientX;
+    mScene.mob_delta_x = (currentX > w_fmob / 2) ? -30 : 30;
+
     $('#container').trigger('wheel');
 });
 
 if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent)) {
     HTMLControlls.mobileIcon();
-} else {
-    setTimeout(HTMLControlls.drop_wsda, 15000);
 }
 
-setTimeout(HTMLControlls.controls, 15000);
-HTMLControlls.res_check();
-
-var sauto = false;
-
-$('#play').click(function () {
-    sautos();
-});
-
 $("#container").click(function (event) { // обработка ссылок
-    mScene.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mScene.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    mScene.inter_click();
+    if (!mScene.mobile) {
+        mScene.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mScene.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        mScene.inter_click();
+    }else{
+        var currentX = event.clientX;
+        mScene.mob_delta_x = (currentX > w_fmob / 2) ? -30 : 30;
+    }
 });
 
 $("#container").mousemove(function (event) {
