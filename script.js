@@ -4,22 +4,15 @@ import { TrackballControls } from './three/jsm/controls/TrackballControls.js';
 import { GLTFLoader } from './three/jsm/loaders/GLTFLoader.js';
 import { DDSLoader } from './three/jsm/loaders/DDSLoader.js';
 import { Reflector } from './three/jsm/Reflector.js';
-
 import { EffectComposer } from './three/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './three/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './three/jsm/postprocessing/UnrealBloomPass.js';
 import { AfterimagePass } from './three/jsm/postprocessing/AfterimagePass.js';
 import { FilmPass } from './three/jsm/postprocessing/FilmPass.js';
-
 import { OutlinePass } from './three/jsm/postprocessing/OutlinePass.js';
-
-
 import { ShaderPass } from './three/jsm/postprocessing/ShaderPass.js';
 import { LuminosityShader } from './three/jsm/shaders/LuminosityShader.js';
 import { SobelOperatorShader } from './three/jsm/shaders/SobelOperatorShader.js';
-
-
-
 
 class ResourceTracker {
     constructor() {
@@ -29,12 +22,10 @@ class ResourceTracker {
         if (!resource) {
             return resource;
         }
-
         if (Array.isArray(resource)) {
             resource.forEach(resource => this.track(resource));
             return resource;
         }
-
         if (resource.dispose || resource instanceof THREE.Object3D) {
             this.resources.add(resource);
         }
@@ -115,7 +106,6 @@ class ResourceTracker {
     }
 
     dispose() {
-
         for (let i = 0; i < mScene.scene.children.length; i++) {
             this.disposeNode(mScene.scene.children[i]);
             mScene.scene.remove(mScene.scene.children[i]);
@@ -145,30 +135,24 @@ class ResourceTracker {
         }
         this.resources.clear();
         mScene.renderer.dispose();
-
         this.disposeNode(mScene.afterimagePass);
         for (let key in mScene.afterimagePass) {
             this.disposeNode(mScene.afterimagePass[key]);
         }
-
         this.disposeNode(mScene.bloomPass);
         for (let key in mScene.bloomPass) {
             this.disposeNode(mScene.bloomPass[key]);
         }
-
         for (let key in mScene.composer) {
             this.disposeNode(mScene.composer[key]);
         }
-
         for (let key in mScene.renderer) {
             this.disposeNode(mScene.renderer[key]);
         }
-
         this.disposeNode(mScene.effectFilm);
         for (let key in mScene.effectFilm) {
             this.disposeNode(mScene.effectFilm[key]);
         }
-
         this.disposeNode(mScene.effectSobel);
         for (let key in mScene.effectSobel) {
             this.disposeNode(mScene.effectSobel[key]);
@@ -177,7 +161,6 @@ class ResourceTracker {
 }
 
 class MultiScene {
-
     constructor(data) {
         this.json = data;
         this.resTracker = new ResourceTracker();
@@ -193,10 +176,8 @@ class MultiScene {
     }
 
     onMouseMove(event) {
-
         this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
     }
 
     set_scenes(id) {
@@ -314,7 +295,6 @@ class MultiScene {
     }
 
     postprocessing_create() {
-
         this.composer = this.track(new EffectComposer(this.renderer));
         this.composer.addPass(new RenderPass(this.scene, this.camera));
         this.bloomPass = this.track(new UnrealBloomPass(new THREE.Vector2(this.w, this.h), 1.5, 0.4, 0.85));
@@ -327,27 +307,12 @@ class MultiScene {
         this.afterimagePass.renderToScreen = true;
         this.composer.addPass(this.afterimagePass);
 
-        //this.effectFilm = new FilmPass(0.02, 0.925, 10008, false);
-
-        //this.effectFilm = new FilmPass(0.35, 0.025, 648, false);
-
         this.outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), this.scene, this.camera);
         this.outlinePass.edgeStrength = 10;
         this.outlinePass.visibleEdgeColor.set('#931400');
         this.outlinePass.edgeThickness = 4;
         this.outlinePass.usePatternTexture = true;
         this.composer.addPass(this.outlinePass);
-
-        // this.composer.addPass(this.effectFilm);
-
-        //var effectGrayScale = new ShaderPass(LuminosityShader); //вариант без него
-        // this.composer.addPass(effectGrayScale);
-        //this.effectSobel = this.track(new ShaderPass(SobelOperatorShader));
-        //this.effectSobel.uniforms[ 'resolution' ].value.x = this.w;
-        //this.effectSobel.uniforms[ 'resolution' ].value.y = this.h;
-        //this.composer.addPass(this.effectSobel);
-
-        //this.set_after_post(this.json[this.sname]['amsterdam']);
     }
 
     after_switch() {
@@ -379,7 +344,7 @@ class MultiScene {
         let video = document.getElementById('wrd');
         let texture = this.track(new THREE.VideoTexture(video));
         var parameters = {color: 0xffffff, map: texture, wireframe: false};
-
+        
         let geometry = this.track(new THREE.BoxGeometry(190, 190, 310));
         let material = this.track(new THREE.MeshLambertMaterial(parameters));
         let cube = this.track(new THREE.Mesh(geometry, material));
@@ -396,11 +361,9 @@ class MultiScene {
 
     gltf_done(gltf) {
         let object = this.track(gltf.scene);
-
         for (let i = 0; i < object.children.length; i++) {
             this.track(object.children[i]);
         }
-
         let animations = gltf.animations;
         this.mixer = this.track(new THREE.AnimationMixer(object));
         for (let i = 0; i < animations.length; i++) {
@@ -417,6 +380,7 @@ class MultiScene {
         this.add_obj(object);
         this.on_window_resize();
         this.animate();
+        HTMLControlls.gltfReady();
     }
 
     load_GLTF(url) {
@@ -425,7 +389,6 @@ class MultiScene {
             this.track(this.loader.load(url, function (gltf) {
                 self.gltf_done(gltf);
             }, undefined, reject));
-
         });
     }
 
@@ -615,7 +578,6 @@ class MultiScene {
     add_sphere() {
         let loader = new THREE.TextureLoader();
         let self = this;
-
         let data = {
             0: {
                 'name': 'tool',
@@ -642,17 +604,14 @@ class MultiScene {
                 'ry': -1.5
             }
         };
-
         let txt;
-
         for (let i = 0; i < Object.keys(data).length; i++) {
             txt = this.track(loader.load(data[i].texture, function (texture) {
                 self.sphere_done(texture, data[i]);
             }));
         }
     }
-    cube_done(texture)
-    {
+    cube_done(texture){
         let rnd = this.rand_int(1, 50);
         let geometry = this.track(new THREE.BoxGeometry(rnd, rnd, rnd));
         let material = this.track(new THREE.MeshBasicMaterial({map: texture}));
@@ -698,7 +657,7 @@ class MultiScene {
                     this.scene.add(this.mir_wal[i]);
                 }
             }
-    }
+        }
     }
 
     mirrors_custom() {
@@ -794,7 +753,6 @@ class MultiScene {
         } else {
             return false;
         }
-
     }
 
     scroll_do(curve) {
@@ -816,11 +774,6 @@ class MultiScene {
         if (this.mobile) {
             delta = this.mob_delta;
             this.scroll_dist = 10;
-            //this.view.z += this.mob_delta_x * 30;
-            // console.log(this.camera.position['x'] +' '+ this.view.x);
-            //this.controls.target['z'] = this.view.z;
-            //console.log(this.controls.target);
-
         } else {
             e = e || window.event;
             delta = (e !== undefined) ? e.deltaY || e.detail || e.wheelDelta : 20;
@@ -864,9 +817,7 @@ class MultiScene {
                 this.on_wheel();
                 setTimeout(function () {
                     mScene.post_dop = true;
-
                 }, 2000);
-
             }
             if (intersects[ 0 ].object.name === 'manus' && this.post_dop) {
                 this.bloomPass.threshold = 0.4;
@@ -876,7 +827,6 @@ class MultiScene {
                 this.on_wheel();
                 setTimeout(function () {
                     mScene.post_dop = true;
-
                 }, 2000);
             }
 
@@ -888,13 +838,10 @@ class MultiScene {
                 this.on_wheel();
                 setTimeout(function () {
                     mScene.post_dop = true;
-
                 }, 1000);
             }
 
             let selectedObject = intersects[ 0 ].object;
-            //selectedObject.scale.set(2, 2, 2);
-
             this.addSelectedObject(selectedObject);
             HTMLControlls.outline(true);
 
@@ -922,8 +869,6 @@ class MultiScene {
 }
 
 // Старт событий и таймеров
-
-
 var json = {
     "scene1": {
         "gltf": "1",
@@ -1001,10 +946,6 @@ $('#container').on('touchmove', function (e) {
 
     $('#container').trigger('wheel');
 });
-
-if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent)) {
-    HTMLControlls.mobileIcon();
-}
 
 $("#container").click(function (event) { // обработка ссылок
     if (!mScene.mobile) {
